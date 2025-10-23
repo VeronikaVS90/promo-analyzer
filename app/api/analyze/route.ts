@@ -1,11 +1,25 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Ініціалізуємо OpenAI клієнт, але поки не створюємо екземпляр
+let openai: OpenAI;
+
+// Перевіряємо наявність ключа
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 export async function POST(request: Request) {
+  // Переносимо перевірку всередину, щоб помилка була у форматі JSON
+  if (!openai) {
+    return NextResponse.json(
+      { error: "OpenAI API key is not configured on the server." },
+      { status: 500 }
+    );
+  }
+
   try {
     const { text } = await request.json();
 
@@ -14,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",

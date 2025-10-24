@@ -48,7 +48,7 @@ export default function HomePage() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Paste your promotional text here..."
-            className="w-full h-48 p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-gray-800"
+            className="w-full h-48 p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-gray-700"
             disabled={mutation.isPending}
           />
           <button

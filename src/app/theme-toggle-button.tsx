@@ -1,0 +1,31 @@
+"use client";
+
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+
+export function ThemeToggleButton() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Уникаємо рендерингу на сервері, щоб не було помилок гідратації
+    return <div style={{ width: "24px", height: "24px" }} />;
+  }
+
+  const isDarkMode = theme === "dark";
+
+  return (
+    <button
+      onClick={() => setTheme(isDarkMode ? "light" : "dark")}
+      className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+      aria-label="Toggle theme"
+    >
+      {isDarkMode ? "☀️" : "🌙"}
+    </button>
+  );
+}

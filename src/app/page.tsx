@@ -7,17 +7,13 @@ import { ThemeToggleButton } from "./theme-toggle-button";
 const analyzeText = async (text: string): Promise<{ analysis: string }> => {
   const response = await fetch("/api/analyze", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || "Failed to fetch analysis");
   }
-
   return response.json();
 };
 

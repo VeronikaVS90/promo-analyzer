@@ -35,16 +35,16 @@ export default function HomePage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 bg-gray-50 dark:bg-gray-900 transition-colors">
+    <main className="flex min-h-screen flex-col items-center p-12 bg-background text-foreground transition-colors">
       <div className="w-full max-w-3xl">
         <div className="absolute top-4 right-4">
           <ThemeToggleButton />
         </div>
 
-        <h1 className="text-4xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">
+        <h1 className="text-4xl font-bold text-center text-foreground mb-2">
           PromoAnalyzer 📝
         </h1>
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
+        <p className="text-center text-foreground/70 mb-8">
           Analyze your promotional content to improve its effectiveness.
         </p>
 
@@ -53,7 +53,7 @@ export default function HomePage() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Paste your promotional text here..."
-            className="w-full h-48 p-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+            className="w-full h-48 p-4 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-background text-foreground"
             disabled={mutation.isPending}
           />
           <button
@@ -80,11 +80,11 @@ export default function HomePage() {
           )}
 
           {mutation.isSuccess && (
-            <div className="bg-white dark:bg-gray-800 p-6 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
+            <div className="bg-background p-6 border border-border rounded-lg shadow-md">
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
                 Analysis Result:
               </h2>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {mutation.data.analysis}
               </p>
             </div>

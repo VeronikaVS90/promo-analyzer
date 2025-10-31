@@ -7,7 +7,7 @@ import { NextThemeProvider } from "./theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Promo Analyzer",
+  title: "Prnomo Analyzer",
   description: "Analyze your promotional content effectiveness",
 };
 

@@ -1,0 +1,13 @@
+
+> promo-analyzer@0.1.0 dev
+> next dev -p 3002
+
+   ▲ Next.js 16.0.0 (Turbopack)
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.142:3002
+   - Environments: .env.local
+
+ ✓ Starting...
+ ⨯ Unable to acquire lock at /home/veronika/promo-analyzer/.next/dev/lock, is another instance of next dev running?
+   Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
+[?25h

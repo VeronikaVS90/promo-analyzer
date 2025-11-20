@@ -1,0 +1,50 @@
+
+> promo-analyzer@0.1.0 dev
+> next dev -p 3000
+
+   ▲ Next.js 16.0.0 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.142:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1330ms
+ ○ Compiling / ...
+ GET / 200 in 5.4s (compile: 5.1s, render: 264ms)
+ HEAD / 200 in 81ms (compile: 9ms, render: 73ms)
+ GET / 200 in 147ms (compile: 10ms, render: 137ms)
+API Error: Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+    at async POST (app/api/analyze/route.ts:30:22)
+  28 |     }
+  29 |
+> 30 |     const response = await openai.chat.completions.create({
+     |                      ^
+  31 |       model: "gpt-3.5-turbo",
+  32 |       messages: [
+  33 |         { {
+  status: 429,
+  headers: Headers {
+    date: 'Tue, 18 Nov 2025 15:40:08 GMT',
+    'content-type': 'application/json; charset=utf-8',
+    'content-length': '337',
+    connection: 'keep-alive',
+    vary: 'Origin',
+    'x-request-id': 'req_ce24420cb0054adaae21ec387870fdd8',
+    'x-envoy-upstream-service-time': '150',
+    'x-openai-proxy-wasm': 'v0.1',
+    'cf-cache-status': 'DYNAMIC',
+    'set-cookie': '__cf_bm=gFMsM0OrloKTXHCeiu4qUo9SA.e6djNJgdju9sm9GYk-1763480408-1.0.1.1-1EdOyMLVQoSBB1dGstp7aFhTEWfCKGCJqujgxJxns5GglG3w061eeGdUALnhGPVpJrEmYK5e0H18mC0Q2Dk0FmUqu3E1TkheWagXxxYArD8; path=/; expires=Tue, 18-Nov-25 16:10:08 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=XAwYtEg9lx8fN3UwYfDCU7N6lDgxWkZRgTmpFgQ9.T0-1763480408408-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    server: 'cloudflare',
+    'cf-ray': '9a0890845e47dd13-WAW',
+    'alt-svc': 'h3=":443"; ma=86400'
+  },
+  requestID: 'req_ce24420cb0054adaae21ec387870fdd8',
+  error: [Object],
+  code: 'insufficient_quota',
+  param: null,
+  type: 'insufficient_quota'
+}
+ POST /api/analyze 500 in 5.9s (compile: 1415ms, render: 4.5s)
+[?25h

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ThemeToggleButton } from "./theme-toggle-button";
 
@@ -70,25 +70,16 @@ async function analyzeText(
   text: string,
   preferences?: Preferences
 ): Promise<Analysis> {
-  console.log("🔵 [API] Sending request to /api/analyze");
   const res = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, preferences }),
   });
-  console.log("🔵 [API] Response status:", res.status, res.statusText);
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
-    console.error("🔴 [API] Error response:", e);
     throw new Error(e.error || "Failed to analyze text");
   }
   const data = await res.json();
-  console.log("✅ [API] Analysis response received:", {
-    hasData: !!data,
-    hasHeadline: !!data?.headline,
-    keys: Object.keys(data || {}),
-    headlineKeys: data?.headline ? Object.keys(data.headline) : [],
-  });
   return data;
 }
 
@@ -112,48 +103,10 @@ export default function HomePage() {
   const [preferences, setPreferences] = useState<
     { brand?: string; tone?: string } | undefined
   >();
-  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const analyzeMutation = useMutation({
     mutationFn: async ({ t, p }: { t: string; p?: Preferences }) => {
-      console.log("🔵 [MUTATION] Starting analysis...");
-      setDebugInfo("Starting analysis...");
-      try {
-        const result = await analyzeText(t, p);
-        console.log("🔵 [MUTATION] Analysis completed:", {
-          hasData: !!result,
-          hasHeadline: !!result?.headline,
-          headlineKeys: result?.headline ? Object.keys(result.headline) : [],
-        });
-        setDebugInfo(`Analysis completed. Has headline: ${!!result.headline}`);
-        return result;
-      } catch (error) {
-        console.error("🔴 [MUTATION] Error:", error);
-        setDebugInfo(
-          `Analysis error: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
-      console.log("✅ [MUTATION] onSuccess called:", {
-        hasData: !!data,
-        hasHeadline: !!data?.headline,
-        dataKeys: data ? Object.keys(data) : [],
-      });
-      setDebugInfo(
-        `Mutation onSuccess. Has data: ${!!data}, Has headline: ${!!data?.headline}`
-      );
-    },
-    onError: (error) => {
-      console.error("🔴 [MUTATION] onError called:", error);
-      setDebugInfo(
-        `Mutation onError: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      return await analyzeText(t, p);
     },
   });
 
@@ -171,56 +124,19 @@ export default function HomePage() {
     return applyHighlights(text, result.benefitsFeatures.highlights);
   }, [text, analyzeMutation.data]);
 
-  // Update debug info when data changes
-  useEffect(() => {
-    if (analyzeMutation.data) {
-      console.log("🟡 [EFFECT] analyzeMutation.data changed:", {
-        hasData: !!analyzeMutation.data,
-        hasHeadline: !!analyzeMutation.data?.headline,
-        isSuccess: analyzeMutation.isSuccess,
-        isPending: analyzeMutation.isPending,
-        isError: analyzeMutation.isError,
-      });
-      // Use setTimeout to avoid synchronous setState
-      setTimeout(() => {
-        setDebugInfo(
-          `Data received! Has headline: ${!!analyzeMutation.data.headline}`
-        );
-      }, 0);
-    }
-  }, [analyzeMutation.data]);
-
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("🔵 [SUBMIT] Form submitted", {
-      mode,
-      textLength: text.length,
-      hasFile: !!file,
-    });
 
     if (mode === "file") {
-      if (!file) {
-        console.log("🔴 [SUBMIT] No file selected");
-        return;
-      }
-      console.log("🔵 [SUBMIT] Parsing file...");
+      if (!file) return;
       await parseMutation.mutateAsync(file);
     } else {
-      if (!text.trim()) {
-        console.log("🔴 [SUBMIT] No text provided");
-        return;
-      }
+      if (!text.trim()) return;
     }
 
     const textToAnalyze = mode === "file" ? text : text;
     if (textToAnalyze.trim()) {
-      console.log(
-        "🔵 [SUBMIT] Starting analysis with text length:",
-        textToAnalyze.length
-      );
       analyzeMutation.mutate({ t: textToAnalyze, p: preferences });
-    } else {
-      console.log("🔴 [SUBMIT] No text to analyze");
     }
   };
 
@@ -309,9 +225,6 @@ export default function HomePage() {
 
           <button
             type="submit"
-            onClick={() => {
-              console.log("🔵 [BUTTON] Button clicked!");
-            }}
             className="mt-1 w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 transition-all duration-200"
             disabled={analyzeMutation.isPending || parseMutation.isPending}
           >
@@ -328,37 +241,9 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Debug info */}
-          <div className="text-xs text-gray-500 p-2 border rounded mb-4">
-            <div>
-              <strong>Debug State:</strong>
-            </div>
-            <div>isSuccess={String(analyzeMutation.isSuccess)}</div>
-            <div>isError={String(analyzeMutation.isError)}</div>
-            <div>isPending={String(analyzeMutation.isPending)}</div>
-            <div>hasData={String(!!analyzeMutation.data)}</div>
-            <div>hasHeadline={String(!!analyzeMutation.data?.headline)}</div>
-            {debugInfo && (
-              <div className="mt-2 text-blue-600">
-                <strong>Debug Info:</strong> {debugInfo}
-              </div>
-            )}
-            {analyzeMutation.data && (
-              <div className="mt-2">
-                <strong>Data preview:</strong>
-                <pre className="text-xs overflow-auto max-h-40">
-                  {JSON.stringify(analyzeMutation.data, null, 2).substring(
-                    0,
-                    500
-                  )}
-                </pre>
-              </div>
-            )}
-          </div>
-
           {analyzeMutation.isError && (
             <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/20 dark:border-red-500/50 dark:text-red-400 px-4 py-3 rounded-lg">
-              <strong className="font-bold">Error: </strong>
+              <strong className="font-bold">Помилка: </strong>
               <span>
                 {analyzeMutation.error instanceof Error
                   ? analyzeMutation.error.message
@@ -367,64 +252,12 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Render analysis results - FORCE RENDER */}
-          {analyzeMutation.data && (
-            <div className="space-y-4 mt-4">
-              <div className="bg-green-500 text-white p-4 rounded-lg">
-                <h2 className="text-2xl font-bold mb-2">
-                  ✅ РЕЗУЛЬТАТИ АНАЛІЗУ
-                </h2>
-                <p>isSuccess: {String(analyzeMutation.isSuccess)}</p>
-                <p>hasData: {String(!!analyzeMutation.data)}</p>
-                <p>hasHeadline: {String(!!analyzeMutation.data?.headline)}</p>
-              </div>
-
-              {analyzeMutation.data.headline ? (
-                <>
-                  <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded border-2 border-blue-500">
-                    <h3 className="text-xl font-bold mb-2">Заголовок</h3>
-                    <p className="text-lg">
-                      <strong>EMV Score:</strong>{" "}
-                      {analyzeMutation.data.headline.emvScore}
-                    </p>
-                    <p className="text-lg">
-                      <strong>CTR:</strong>{" "}
-                      {analyzeMutation.data.headline.ctrPrediction.score}
-                    </p>
-                    <p className="text-sm mt-2">
-                      <strong>Чому:</strong> {analyzeMutation.data.headline.why}
-                    </p>
-                  </div>
-
-                  <AnalysisResults
-                    data={analyzeMutation.data}
-                    highlighted={highlighted}
-                  />
-                </>
-              ) : (
-                <div className="bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded border-2 border-yellow-500">
-                  <p className="font-bold">
-                    ⚠️ Дані отримано, але структура некоректна.
-                  </p>
-                  <p className="text-sm mt-2">
-                    Ключі: {Object.keys(analyzeMutation.data).join(", ")}
-                  </p>
-                  <pre className="text-xs mt-2 overflow-auto max-h-60 bg-gray-100 p-2 rounded">
-                    {JSON.stringify(analyzeMutation.data, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
+          {analyzeMutation.data && analyzeMutation.data.headline && (
+            <AnalysisResults
+              data={analyzeMutation.data}
+              highlighted={highlighted}
+            />
           )}
-
-          {/* Show when no data but not pending */}
-          {!analyzeMutation.data &&
-            !analyzeMutation.isPending &&
-            analyzeMutation.isSuccess && (
-              <div className="bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded border-2 border-yellow-500 mt-4">
-                <p>⚠️ isSuccess=true, але даних немає</p>
-              </div>
-            )}
         </div>
       </div>
     </main>
@@ -438,21 +271,11 @@ function AnalysisResults({
   data: Analysis;
   highlighted: Array<{ text: string; type: "text" | "benefit" | "feature" }>;
 }) {
-  console.log("🟢 [AnalysisResults] Rendering with data:", {
-    hasData: !!data,
-    hasHeadline: !!data?.headline,
-    headlineKeys: data?.headline ? Object.keys(data.headline) : [],
-  });
-
-  // Safety check
   if (!data || !data.headline) {
-    console.error("🔴 [AnalysisResults] Invalid data structure");
-    return <div className="text-red-500">Error: Invalid data structure</div>;
+    return <div className="text-red-500">Помилка: некоректна структура даних</div>;
   }
 
-  try {
-    console.log("🟢 [AnalysisResults] Rendering sections...");
-    return (
+  return (
       <>
         {/* Headline / CTR */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
@@ -629,13 +452,6 @@ function AnalysisResults({
         </section>
       </>
     );
-  } catch (error) {
-    return (
-      <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded">
-        <strong>Error rendering analysis:</strong> {String(error)}
-      </div>
-    );
-  }
 }
 
 function Stat({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ThemeToggleButton } from "./theme-toggle-button";
 
@@ -70,16 +70,26 @@ async function analyzeText(
   text: string,
   preferences?: Preferences
 ): Promise<Analysis> {
+  console.log("🔵 [API] Sending request to /api/analyze");
   const res = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, preferences }),
   });
+  console.log("🔵 [API] Response status:", res.status, res.statusText);
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
+    console.error("🔴 [API] Error response:", e);
     throw new Error(e.error || "Failed to analyze text");
   }
-  return res.json();
+  const data = await res.json();
+  console.log("✅ [API] Analysis response received:", {
+    hasData: !!data,
+    hasHeadline: !!data?.headline,
+    keys: Object.keys(data || {}),
+    headlineKeys: data?.headline ? Object.keys(data.headline) : [],
+  });
+  return data;
 }
 
 async function parseFile(
@@ -102,9 +112,49 @@ export default function HomePage() {
   const [preferences, setPreferences] = useState<
     { brand?: string; tone?: string } | undefined
   >();
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const analyzeMutation = useMutation({
-    mutationFn: ({ t, p }: { t: string; p?: Preferences }) => analyzeText(t, p),
+    mutationFn: async ({ t, p }: { t: string; p?: Preferences }) => {
+      console.log("🔵 [MUTATION] Starting analysis...");
+      setDebugInfo("Starting analysis...");
+      try {
+        const result = await analyzeText(t, p);
+        console.log("🔵 [MUTATION] Analysis completed:", {
+          hasData: !!result,
+          hasHeadline: !!result?.headline,
+          headlineKeys: result?.headline ? Object.keys(result.headline) : [],
+        });
+        setDebugInfo(`Analysis completed. Has headline: ${!!result.headline}`);
+        return result;
+      } catch (error) {
+        console.error("🔴 [MUTATION] Error:", error);
+        setDebugInfo(
+          `Analysis error: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      console.log("✅ [MUTATION] onSuccess called:", {
+        hasData: !!data,
+        hasHeadline: !!data?.headline,
+        dataKeys: data ? Object.keys(data) : [],
+      });
+      setDebugInfo(
+        `Mutation onSuccess. Has data: ${!!data}, Has headline: ${!!data?.headline}`
+      );
+    },
+    onError: (error) => {
+      console.error("🔴 [MUTATION] onError called:", error);
+      setDebugInfo(
+        `Mutation onError: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    },
   });
 
   const parseMutation = useMutation({
@@ -121,19 +171,56 @@ export default function HomePage() {
     return applyHighlights(text, result.benefitsFeatures.highlights);
   }, [text, analyzeMutation.data]);
 
+  // Update debug info when data changes
+  useEffect(() => {
+    if (analyzeMutation.data) {
+      console.log("🟡 [EFFECT] analyzeMutation.data changed:", {
+        hasData: !!analyzeMutation.data,
+        hasHeadline: !!analyzeMutation.data?.headline,
+        isSuccess: analyzeMutation.isSuccess,
+        isPending: analyzeMutation.isPending,
+        isError: analyzeMutation.isError,
+      });
+      // Use setTimeout to avoid synchronous setState
+      setTimeout(() => {
+        setDebugInfo(
+          `Data received! Has headline: ${!!analyzeMutation.data.headline}`
+        );
+      }, 0);
+    }
+  }, [analyzeMutation.data]);
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log("🔵 [SUBMIT] Form submitted", {
+      mode,
+      textLength: text.length,
+      hasFile: !!file,
+    });
+
     if (mode === "file") {
-      if (!file) return;
+      if (!file) {
+        console.log("🔴 [SUBMIT] No file selected");
+        return;
+      }
+      console.log("🔵 [SUBMIT] Parsing file...");
       await parseMutation.mutateAsync(file);
     } else {
-      if (!text.trim()) return;
+      if (!text.trim()) {
+        console.log("🔴 [SUBMIT] No text provided");
+        return;
+      }
     }
-    if (
-      (mode === "text" && text.trim()) ||
-      (mode === "file" && (text || "").trim())
-    ) {
-      analyzeMutation.mutate({ t: text, p: preferences });
+
+    const textToAnalyze = mode === "file" ? text : text;
+    if (textToAnalyze.trim()) {
+      console.log(
+        "🔵 [SUBMIT] Starting analysis with text length:",
+        textToAnalyze.length
+      );
+      analyzeMutation.mutate({ t: textToAnalyze, p: preferences });
+    } else {
+      console.log("🔴 [SUBMIT] No text to analyze");
     }
   };
 
@@ -222,6 +309,9 @@ export default function HomePage() {
 
           <button
             type="submit"
+            onClick={() => {
+              console.log("🔵 [BUTTON] Button clicked!");
+            }}
             className="mt-1 w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 transition-all duration-200"
             disabled={analyzeMutation.isPending || parseMutation.isPending}
           >
@@ -238,6 +328,34 @@ export default function HomePage() {
             </div>
           )}
 
+          {/* Debug info */}
+          <div className="text-xs text-gray-500 p-2 border rounded mb-4">
+            <div>
+              <strong>Debug State:</strong>
+            </div>
+            <div>isSuccess={String(analyzeMutation.isSuccess)}</div>
+            <div>isError={String(analyzeMutation.isError)}</div>
+            <div>isPending={String(analyzeMutation.isPending)}</div>
+            <div>hasData={String(!!analyzeMutation.data)}</div>
+            <div>hasHeadline={String(!!analyzeMutation.data?.headline)}</div>
+            {debugInfo && (
+              <div className="mt-2 text-blue-600">
+                <strong>Debug Info:</strong> {debugInfo}
+              </div>
+            )}
+            {analyzeMutation.data && (
+              <div className="mt-2">
+                <strong>Data preview:</strong>
+                <pre className="text-xs overflow-auto max-h-40">
+                  {JSON.stringify(analyzeMutation.data, null, 2).substring(
+                    0,
+                    500
+                  )}
+                </pre>
+              </div>
+            )}
+          </div>
+
           {analyzeMutation.isError && (
             <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/20 dark:border-red-500/50 dark:text-red-400 px-4 py-3 rounded-lg">
               <strong className="font-bold">Error: </strong>
@@ -249,264 +367,275 @@ export default function HomePage() {
             </div>
           )}
 
-          {analyzeMutation.isSuccess && analyzeMutation.data && (
-            <>
-              {/* Headline / CTR */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  Заголовок: EMV та CTR
+          {/* Render analysis results - FORCE RENDER */}
+          {analyzeMutation.data && (
+            <div className="space-y-4 mt-4">
+              <div className="bg-green-500 text-white p-4 rounded-lg">
+                <h2 className="text-2xl font-bold mb-2">
+                  ✅ РЕЗУЛЬТАТИ АНАЛІЗУ
                 </h2>
-                <div className="grid md:grid-cols-3 gap-3">
-                  <Stat
-                    label="EMV"
-                    value={analyzeMutation.data.headline.emvScore}
-                  />
-                  <Stat
-                    label="CTR потенціал"
-                    value={analyzeMutation.data.headline.ctrPrediction.score}
-                  />
-                  <Stat
-                    label="Чому так"
-                    value="—"
-                    sub={analyzeMutation.data.headline.why}
-                  />
-                </div>
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-1">Кращі варіанти:</h3>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>
-                      <b>Експертний:</b>{" "}
-                      {analyzeMutation.data.headline.alternatives.expert}
-                    </li>
-                    <li>
-                      <b>Емоційний:</b>{" "}
-                      {analyzeMutation.data.headline.alternatives.emotional}
-                    </li>
-                    <li>
-                      <b>Продаючий:</b>{" "}
-                      {analyzeMutation.data.headline.alternatives.sales}
-                    </li>
-                  </ul>
-                </div>
-              </section>
+                <p>isSuccess: {String(analyzeMutation.isSuccess)}</p>
+                <p>hasData: {String(!!analyzeMutation.data)}</p>
+                <p>hasHeadline: {String(!!analyzeMutation.data?.headline)}</p>
+              </div>
 
-              {/* Benefits vs Features */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  Benefits vs Features
-                </h2>
-                <div className="mb-2">
-                  <span className="mr-3">
-                    Benefits:{" "}
-                    <b>
-                      {analyzeMutation.data.benefitsFeatures.ratio.benefits}%
-                    </b>
-                  </span>
-                  <span>
-                    Features:{" "}
-                    <b>
-                      {analyzeMutation.data.benefitsFeatures.ratio.features}%
-                    </b>
-                  </span>
-                </div>
-                <div className="rounded border p-3 text-sm leading-7">
-                  {highlighted.map((seg, i) =>
-                    seg.type === "text" ? (
-                      <span key={i}>{seg.text}</span>
-                    ) : (
-                      <span
-                        key={i}
-                        className={
-                          seg.type === "benefit"
-                            ? "bg-green-200 dark:bg-green-900/40"
-                            : "bg-blue-200 dark:bg-blue-900/40"
-                        }
-                      >
-                        {seg.text}
-                      </span>
-                    )
-                  )}
-                </div>
-                {!!analyzeMutation.data.benefitsFeatures.missingBenefits
-                  ?.length && (
-                  <div className="mt-2 text-sm">
-                    <b>Додати вигоди:</b>{" "}
-                    {analyzeMutation.data.benefitsFeatures.missingBenefits.join(
-                      "; "
-                    )}
+              {analyzeMutation.data.headline ? (
+                <>
+                  <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded border-2 border-blue-500">
+                    <h3 className="text-xl font-bold mb-2">Заголовок</h3>
+                    <p className="text-lg">
+                      <strong>EMV Score:</strong>{" "}
+                      {analyzeMutation.data.headline.emvScore}
+                    </p>
+                    <p className="text-lg">
+                      <strong>CTR:</strong>{" "}
+                      {analyzeMutation.data.headline.ctrPrediction.score}
+                    </p>
+                    <p className="text-sm mt-2">
+                      <strong>Чому:</strong> {analyzeMutation.data.headline.why}
+                    </p>
                   </div>
-                )}
-              </section>
 
-              {/* PAS */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  Problem → Agitation → Solution
-                </h2>
-                <div className="grid md:grid-cols-3 gap-3 text-sm">
-                  <PasCell
-                    title="Problem"
-                    data={analyzeMutation.data.pas.problem}
+                  <AnalysisResults
+                    data={analyzeMutation.data}
+                    highlighted={highlighted}
                   />
-                  <PasCell
-                    title="Agitation"
-                    data={analyzeMutation.data.pas.agitation}
-                  />
-                  <PasCell
-                    title="Solution"
-                    data={analyzeMutation.data.pas.solution}
-                  />
+                </>
+              ) : (
+                <div className="bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded border-2 border-yellow-500">
+                  <p className="font-bold">
+                    ⚠️ Дані отримано, але структура некоректна.
+                  </p>
+                  <p className="text-sm mt-2">
+                    Ключі: {Object.keys(analyzeMutation.data).join(", ")}
+                  </p>
+                  <pre className="text-xs mt-2 overflow-auto max-h-60 bg-gray-100 p-2 rounded">
+                    {JSON.stringify(analyzeMutation.data, null, 2)}
+                  </pre>
                 </div>
-                {!!analyzeMutation.data.pas.recommendations?.length && (
-                  <ul className="mt-3 list-disc pl-5 text-sm">
-                    {analyzeMutation.data.pas.recommendations.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {/* Sales mistakes */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">Sales Mistakes</h2>
-                <div className="grid md:grid-cols-4 gap-3 text-sm">
-                  <Stat
-                    label="Довгі речення"
-                    value={
-                      analyzeMutation.data.salesMistakes.longSentences
-                        ?.length || 0
-                    }
-                  />
-                  <Stat
-                    label="Загальні фрази"
-                    value={
-                      analyzeMutation.data.salesMistakes.genericPhrases
-                        ?.length || 0
-                    }
-                  />
-                  <Stat
-                    label="Слова-паразити"
-                    value={
-                      analyzeMutation.data.salesMistakes.fillerWords?.length ||
-                      0
-                    }
-                  />
-                  <Stat
-                    label="Кліше"
-                    value={
-                      analyzeMutation.data.salesMistakes.cliches?.length || 0
-                    }
-                  />
-                </div>
-                <div className="text-sm mt-2">
-                  Вода:{" "}
-                  <b>{analyzeMutation.data.salesMistakes.waterPercentage}%</b>
-                </div>
-              </section>
-
-              {/* SEO */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">SEO Coverage</h2>
-                <div className="grid md:grid-cols-3 gap-3 text-sm">
-                  <Stat
-                    label="Покриття"
-                    value={analyzeMutation.data.seo.coverage}
-                  />
-                  <List
-                    label="Ключові"
-                    items={analyzeMutation.data.seo.keywords}
-                  />
-                  <List
-                    label="LSI"
-                    items={analyzeMutation.data.seo.lsiSuggestions}
-                  />
-                </div>
-                {!!analyzeMutation.data.seo.missingKeywords?.length && (
-                  <div className="text-sm mt-2">
-                    <b>Додати:</b>{" "}
-                    {analyzeMutation.data.seo.missingKeywords.join(", ")}
-                  </div>
-                )}
-              </section>
-
-              {/* CTA */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  AI CTA Optimizer
-                </h2>
-                <ul className="list-disc pl-5 text-sm space-y-1">
-                  {analyzeMutation.data.cta.suggestions.map((s, i) => (
-                    <li key={i}>
-                      <b>{s.text}</b>{" "}
-                      <span className="opacity-70">— {s.context}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              {/* Tone & Write Like */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  Tone / Write Like…
-                </h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <List
-                    label="Tone variants"
-                    items={analyzeMutation.data.tone.variants.map(
-                      (v) => `${v.tone}: ${v.text}`
-                    )}
-                  />
-                  <List
-                    label="Brand styles"
-                    items={analyzeMutation.data.writeLike.brandStyles.map(
-                      (b) => `${b.brand}: ${b.text}`
-                    )}
-                  />
-                </div>
-              </section>
-
-              {/* Dashboard */}
-              <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-2">
-                  Content Score Dashboard
-                </h2>
-                <div className="grid md:grid-cols-4 gap-3 text-sm">
-                  <Stat
-                    label="CTR"
-                    value={analyzeMutation.data.dashboard.ctr}
-                  />
-                  <Stat
-                    label="Емоційність"
-                    value={analyzeMutation.data.dashboard.emotionality}
-                  />
-                  <Stat
-                    label="Benefit-power"
-                    value={analyzeMutation.data.dashboard.benefitPower}
-                  />
-                  <Stat
-                    label="PAS"
-                    value={analyzeMutation.data.dashboard.pas}
-                  />
-                  <Stat
-                    label="SEO"
-                    value={analyzeMutation.data.dashboard.seo}
-                  />
-                  <Stat
-                    label="Унікальність"
-                    value={analyzeMutation.data.dashboard.uniqueness}
-                  />
-                  <Stat
-                    label="Загальний"
-                    value={analyzeMutation.data.dashboard.overall}
-                  />
-                </div>
-              </section>
-            </>
+              )}
+            </div>
           )}
+
+          {/* Show when no data but not pending */}
+          {!analyzeMutation.data &&
+            !analyzeMutation.isPending &&
+            analyzeMutation.isSuccess && (
+              <div className="bg-yellow-100 dark:bg-yellow-900/20 p-4 rounded border-2 border-yellow-500 mt-4">
+                <p>⚠️ isSuccess=true, але даних немає</p>
+              </div>
+            )}
         </div>
       </div>
     </main>
   );
+}
+
+function AnalysisResults({
+  data,
+  highlighted,
+}: {
+  data: Analysis;
+  highlighted: Array<{ text: string; type: "text" | "benefit" | "feature" }>;
+}) {
+  console.log("🟢 [AnalysisResults] Rendering with data:", {
+    hasData: !!data,
+    hasHeadline: !!data?.headline,
+    headlineKeys: data?.headline ? Object.keys(data.headline) : [],
+  });
+
+  // Safety check
+  if (!data || !data.headline) {
+    console.error("🔴 [AnalysisResults] Invalid data structure");
+    return <div className="text-red-500">Error: Invalid data structure</div>;
+  }
+
+  try {
+    console.log("🟢 [AnalysisResults] Rendering sections...");
+    return (
+      <>
+        {/* Headline / CTR */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">Заголовок: EMV та CTR</h2>
+          <div className="grid md:grid-cols-3 gap-3">
+            <Stat label="EMV" value={data.headline.emvScore} />
+            <Stat
+              label="CTR потенціал"
+              value={data.headline.ctrPrediction.score}
+            />
+            <Stat label="Чому так" value="—" sub={data.headline.why} />
+          </div>
+          <div className="mt-4">
+            <h3 className="font-semibold mb-1">Кращі варіанти:</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <b>Експертний:</b> {data.headline.alternatives.expert}
+              </li>
+              <li>
+                <b>Емоційний:</b> {data.headline.alternatives.emotional}
+              </li>
+              <li>
+                <b>Продаючий:</b> {data.headline.alternatives.sales}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* Benefits vs Features */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">Benefits vs Features</h2>
+          <div className="mb-2">
+            <span className="mr-3">
+              Benefits: <b>{data.benefitsFeatures.ratio.benefits}%</b>
+            </span>
+            <span>
+              Features: <b>{data.benefitsFeatures.ratio.features}%</b>
+            </span>
+          </div>
+          <div className="rounded border p-3 text-sm leading-7">
+            {highlighted.map((seg, i) =>
+              seg.type === "text" ? (
+                <span key={i}>{seg.text}</span>
+              ) : (
+                <span
+                  key={i}
+                  className={
+                    seg.type === "benefit"
+                      ? "bg-green-200 dark:bg-green-900/40"
+                      : "bg-blue-200 dark:bg-blue-900/40"
+                  }
+                >
+                  {seg.text}
+                </span>
+              )
+            )}
+          </div>
+          {!!data.benefitsFeatures.missingBenefits?.length && (
+            <div className="mt-2 text-sm">
+              <b>Додати вигоди:</b>{" "}
+              {data.benefitsFeatures.missingBenefits.join("; ")}
+            </div>
+          )}
+        </section>
+
+        {/* PAS */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">
+            Problem → Agitation → Solution
+          </h2>
+          <div className="grid md:grid-cols-3 gap-3 text-sm">
+            <PasCell title="Problem" data={data.pas.problem} />
+            <PasCell title="Agitation" data={data.pas.agitation} />
+            <PasCell title="Solution" data={data.pas.solution} />
+          </div>
+          {!!data.pas.recommendations?.length && (
+            <ul className="mt-3 list-disc pl-5 text-sm">
+              {data.pas.recommendations.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Sales mistakes */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">Sales Mistakes</h2>
+          <div className="grid md:grid-cols-4 gap-3 text-sm">
+            <Stat
+              label="Довгі речення"
+              value={data.salesMistakes.longSentences?.length || 0}
+            />
+            <Stat
+              label="Загальні фрази"
+              value={data.salesMistakes.genericPhrases?.length || 0}
+            />
+            <Stat
+              label="Слова-паразити"
+              value={data.salesMistakes.fillerWords?.length || 0}
+            />
+            <Stat
+              label="Кліше"
+              value={data.salesMistakes.cliches?.length || 0}
+            />
+          </div>
+          <div className="text-sm mt-2">
+            Вода: <b>{data.salesMistakes.waterPercentage}%</b>
+          </div>
+        </section>
+
+        {/* SEO */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">SEO Coverage</h2>
+          <div className="grid md:grid-cols-3 gap-3 text-sm">
+            <Stat label="Покриття" value={data.seo.coverage} />
+            <List label="Ключові" items={data.seo.keywords} />
+            <List label="LSI" items={data.seo.lsiSuggestions} />
+          </div>
+          {!!data.seo.missingKeywords?.length && (
+            <div className="text-sm mt-2">
+              <b>Додати:</b> {data.seo.missingKeywords.join(", ")}
+            </div>
+          )}
+        </section>
+
+        {/* CTA */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">AI CTA Optimizer</h2>
+          <ul className="list-disc pl-5 text-sm space-y-1">
+            {data.cta.suggestions.map((s, i) => (
+              <li key={i}>
+                <b>{s.text}</b>{" "}
+                <span className="opacity-70">— {s.context}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Tone & Write Like */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">Tone / Write Like…</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <List
+              label="Tone variants"
+              items={data.tone.variants.map((v) => `${v.tone}: ${v.text}`)}
+            />
+            <List
+              label="Brand styles"
+              items={
+                data.writeLike.brandStyles?.length > 0
+                  ? data.writeLike.brandStyles.map(
+                      (b) => `${b.brand}: ${b.text}`
+                    )
+                  : ["Немає варіантів"]
+              }
+            />
+          </div>
+        </section>
+
+        {/* Dashboard */}
+        <section className="bg-background p-6 border border-border rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-2">
+            Content Score Dashboard
+          </h2>
+          <div className="grid md:grid-cols-4 gap-3 text-sm">
+            <Stat label="CTR" value={data.dashboard.ctr} />
+            <Stat label="Емоційність" value={data.dashboard.emotionality} />
+            <Stat label="Benefit-power" value={data.dashboard.benefitPower} />
+            <Stat label="PAS" value={data.dashboard.pas} />
+            <Stat label="SEO" value={data.dashboard.seo} />
+            <Stat label="Унікальність" value={data.dashboard.uniqueness} />
+            <Stat label="Загальний" value={data.dashboard.overall} />
+          </div>
+        </section>
+      </>
+    );
+  } catch (error) {
+    return (
+      <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded">
+        <strong>Error rendering analysis:</strong> {String(error)}
+      </div>
+    );
+  }
 }
 
 function Stat({

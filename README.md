@@ -1,24 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PromoAnalyzer 📝
+
+AI-powered promotional content analyzer with 10+ marketing features: EMV/CTR analysis, Benefits vs Features detection, PAS rating, Sales mistakes checker, SEO coverage, CTA optimizer, and more.
 
 ## Getting Started
 
-First, run the development server:
-
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Configure AI provider (choose one):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Option 1: Ollama (FREE, Local) 🆓
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Pull a model (e.g., llama3.2)
+ollama pull llama3.2
+
+# In .env.local:
+AI_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+```
+
+### Option 2: Groq (FREE Tier) 🆓
+```bash
+# Get free API key from https://console.groq.com/
+# In .env.local:
+AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.1-70b-versatile
+```
+
+### Option 3: OpenAI (Paid, but cheap)
+```bash
+# Get API key from https://platform.openai.com/api-keys
+# In .env.local:
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-your_openai_key
+OPENAI_MODEL=gpt-4o-mini  # cheapest option
+```
+
+3. Run the development server:
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser.
+
+## Features
+
+- 🧠 **AI Headline Analysis** - EMV score, CTR prediction, alternative headlines
+- 🎯 **Benefits vs Features Detector** - Color-coded highlighting, ratio analysis
+- 🔥 **PAS Rating** - Problem → Agitation → Solution analysis
+- 🔍 **Sales Mistakes Checker** - Long sentences, generic phrases, filler words
+- 📊 **SEO Keyword Coverage** - Keywords extraction, LSI suggestions
+- 📁 **File Upload** - Parse .pdf, .docx, .txt files
+- 🧩 **AI Style Rewriter** - Rewrite in brand styles (Apple, Nike, Tesla, etc.)
+- 📈 **Content Score Dashboard** - Overall content quality metrics
+- 🧩 **CTA Optimizer** - AI-generated call-to-action suggestions
+- 🌍 **Tone Switcher** - Convert between formal, friendly, expert, etc.
 
 ## Learn More
 

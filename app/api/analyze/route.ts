@@ -1,16 +1,118 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-// Лінивий інстанс
-let openai: OpenAI;
+// Provider configuration
+type Provider = "openai" | "ollama" | "groq";
+
+function getProvider(): Provider {
+  const provider = (process.env.AI_PROVIDER || "openai").toLowerCase() as Provider;
+  if (["openai", "ollama", "groq"].includes(provider)) {
+    return provider;
+  }
+  return "openai";
+}
+
+// Лінивий інстанс OpenAI
+let openai: OpenAI | null = null;
 if (process.env.OPENAI_API_KEY) {
   openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
+// Groq client (uses OpenAI-compatible API)
+let groqClient: OpenAI | null = null;
+if (process.env.GROQ_API_KEY) {
+  groqClient = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+}
+
+async function callAIProvider(
+  provider: Provider,
+  systemPrompt: string,
+  userPrompt: string,
+  model?: string
+): Promise<string> {
+  switch (provider) {
+    case "ollama": {
+      const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
+      const ollamaModel = model || process.env.OLLAMA_MODEL || "llama3.2";
+      
+      const response = await fetch(`${ollamaUrl}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: ollamaModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          stream: false,
+          options: { temperature: 0.4 },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.message?.content || "";
+    }
+
+    case "groq": {
+      if (!groqClient) {
+        throw new Error("Groq API key is not configured. Set GROQ_API_KEY in .env.local");
+      }
+      const groqModel = model || process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+      
+      const response = await groqClient.chat.completions.create({
+        model: groqModel,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+
+      return response.choices?.[0]?.message?.content || "";
+    }
+
+    case "openai":
+    default: {
+      if (!openai) {
+        throw new Error("OpenAI API key is not configured. Set OPENAI_API_KEY in .env.local");
+      }
+      const openaiModel = model || process.env.OPENAI_MODEL || "gpt-4o-mini";
+      
+      const response = await openai.chat.completions.create({
+        model: openaiModel,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+
+      return response.choices?.[0]?.message?.content || "";
+    }
+  }
+}
+
 export async function POST(request: Request) {
-  if (!openai) {
+  const provider = getProvider();
+  
+  // Check provider-specific requirements
+  if (provider === "openai" && !openai) {
     return NextResponse.json(
-      { error: "OpenAI API key is not configured on the server." },
+      { error: "OpenAI API key is not configured. Set OPENAI_API_KEY in .env.local, or use AI_PROVIDER=ollama for free local models." },
+      { status: 500 }
+    );
+  }
+  
+  if (provider === "groq" && !groqClient) {
+    return NextResponse.json(
+      { error: "Groq API key is not configured. Set GROQ_API_KEY in .env.local, or use AI_PROVIDER=ollama for free local models." },
       { status: 500 }
     );
   }
@@ -103,17 +205,8 @@ Rules:
 - Return VALID JSON only.
 `;
 
-    const response = await openai.chat.completions.create({
-      // lightweight, cheap, good for JSON
-      model: "gpt-4o-mini",
-      temperature: 0.4,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    });
-
-    const raw = response.choices?.[0]?.message?.content || "";
+    // Call the appropriate AI provider
+    const raw = await callAIProvider(provider, systemPrompt, userPrompt);
     const json = tryParseJson(raw);
 
     if (!json) {

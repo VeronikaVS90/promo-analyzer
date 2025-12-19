@@ -12,7 +12,7 @@ function getProvider(): Provider {
   return "openai";
 }
 
-// Лінивий інстанс OpenAI
+// Lazy OpenAI instance
 let openai: OpenAI | null = null;
 if (process.env.OPENAI_API_KEY) {
   openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

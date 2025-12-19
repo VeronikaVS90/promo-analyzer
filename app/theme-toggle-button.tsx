@@ -13,7 +13,7 @@ export function ThemeToggleButton() {
   }, []);
 
   if (!mounted) {
-    // Уникаємо рендерингу на сервері, щоб не було помилок гідратації
+    // Avoid server-side rendering to prevent hydration errors
     return <div style={{ width: "24px", height: "24px" }} />;
   }
 

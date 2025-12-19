@@ -151,7 +151,7 @@ export default function HomePage() {
           PromoAnalyzer 📝
         </h1>
         <p className="text-center text-foreground/70 mb-8">
-          AI-аналіз промо-текстів: CTR, EMV, PAS, SEO, CTA, стиль та ще більше.
+          AI-powered promotional content analysis: CTR, EMV, PAS, SEO, CTA, style, and more.
         </p>
 
         <div className="mb-4 flex gap-2">
@@ -161,7 +161,7 @@ export default function HomePage() {
               mode === "text" ? "bg-blue-600 text-white" : "bg-muted"
             }`}
           >
-            Вставити текст
+            Paste text
           </button>
           <button
             onClick={() => setMode("file")}
@@ -169,7 +169,7 @@ export default function HomePage() {
               mode === "file" ? "bg-blue-600 text-white" : "bg-muted"
             }`}
           >
-            Завантажити файл (.pdf / .docx / .txt)
+            Upload file (.pdf / .docx / .txt)
           </button>
         </div>
 
@@ -178,7 +178,7 @@ export default function HomePage() {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Вставте текст для аналізу..."
+              placeholder="Paste text for analysis..."
               className="w-full h-48 p-4 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-background text-foreground"
               disabled={analyzeMutation.isPending || parseMutation.isPending}
             />
@@ -195,7 +195,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-3">
             <input
               className="border border-border rounded px-3 py-2 bg-background"
-              placeholder="Бренд-стиль (Apple, Nike, Tesla...) — опціонально"
+              placeholder="Brand style (Apple, Nike, Tesla...) — optional"
               onChange={(e) =>
                 setPreferences((p) => ({
                   ...(p || {}),
@@ -213,13 +213,13 @@ export default function HomePage() {
               }
               defaultValue=""
             >
-              <option value="">Тон — опціонально</option>
-              <option value="formal">формальний</option>
-              <option value="friendly">дружній</option>
-              <option value="expert">експертний</option>
-              <option value="blogger">блогерський</option>
-              <option value="medical">медичний</option>
-              <option value="simple">простими словами</option>
+              <option value="">Tone — optional</option>
+              <option value="formal">formal</option>
+              <option value="friendly">friendly</option>
+              <option value="expert">expert</option>
+              <option value="blogger">blogger</option>
+              <option value="medical">medical</option>
+              <option value="simple">simple words</option>
             </select>
           </div>
 
@@ -229,21 +229,21 @@ export default function HomePage() {
             disabled={analyzeMutation.isPending || parseMutation.isPending}
           >
             {analyzeMutation.isPending || parseMutation.isPending
-              ? "Аналіз..."
-              : "Проаналізувати"}
+              ? "Analyzing..."
+              : "Analyze"}
           </button>
         </form>
 
         <div className="mt-8 w-full space-y-8">
           {(analyzeMutation.isPending || parseMutation.isPending) && (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              Обробка...
+              Processing...
             </div>
           )}
 
           {analyzeMutation.isError && (
             <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/20 dark:border-red-500/50 dark:text-red-400 px-4 py-3 rounded-lg">
-              <strong className="font-bold">Помилка: </strong>
+              <strong className="font-bold">Error: </strong>
               <span>
                 {analyzeMutation.error instanceof Error
                   ? analyzeMutation.error.message
@@ -272,33 +272,33 @@ function AnalysisResults({
   highlighted: Array<{ text: string; type: "text" | "benefit" | "feature" }>;
 }) {
   if (!data || !data.headline) {
-    return <div className="text-red-500">Помилка: некоректна структура даних</div>;
+    return <div className="text-red-500">Error: invalid data structure</div>;
   }
 
   return (
       <>
         {/* Headline / CTR */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2">Заголовок: EMV та CTR</h2>
+          <h2 className="text-2xl font-semibold mb-2">Headline: EMV & CTR</h2>
           <div className="grid md:grid-cols-3 gap-3">
             <Stat label="EMV" value={data.headline.emvScore} />
             <Stat
-              label="CTR потенціал"
+              label="CTR Potential"
               value={data.headline.ctrPrediction.score}
             />
-            <Stat label="Чому так" value="—" sub={data.headline.why} />
+            <Stat label="Why" value="—" sub={data.headline.why} />
           </div>
           <div className="mt-4">
-            <h3 className="font-semibold mb-1">Кращі варіанти:</h3>
+            <h3 className="font-semibold mb-1">Better alternatives:</h3>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                <b>Експертний:</b> {data.headline.alternatives.expert}
+                <b>Expert:</b> {data.headline.alternatives.expert}
               </li>
               <li>
-                <b>Емоційний:</b> {data.headline.alternatives.emotional}
+                <b>Emotional:</b> {data.headline.alternatives.emotional}
               </li>
               <li>
-                <b>Продаючий:</b> {data.headline.alternatives.sales}
+                <b>Sales:</b> {data.headline.alternatives.sales}
               </li>
             </ul>
           </div>
@@ -335,7 +335,7 @@ function AnalysisResults({
           </div>
           {!!data.benefitsFeatures.missingBenefits?.length && (
             <div className="mt-2 text-sm">
-              <b>Додати вигоди:</b>{" "}
+              <b>Add benefits:</b>{" "}
               {data.benefitsFeatures.missingBenefits.join("; ")}
             </div>
           )}
@@ -365,24 +365,24 @@ function AnalysisResults({
           <h2 className="text-2xl font-semibold mb-2">Sales Mistakes</h2>
           <div className="grid md:grid-cols-4 gap-3 text-sm">
             <Stat
-              label="Довгі речення"
+              label="Long Sentences"
               value={data.salesMistakes.longSentences?.length || 0}
             />
             <Stat
-              label="Загальні фрази"
+              label="Generic Phrases"
               value={data.salesMistakes.genericPhrases?.length || 0}
             />
             <Stat
-              label="Слова-паразити"
+              label="Filler Words"
               value={data.salesMistakes.fillerWords?.length || 0}
             />
             <Stat
-              label="Кліше"
+              label="Cliches"
               value={data.salesMistakes.cliches?.length || 0}
             />
           </div>
           <div className="text-sm mt-2">
-            Вода: <b>{data.salesMistakes.waterPercentage}%</b>
+            Water: <b>{data.salesMistakes.waterPercentage}%</b>
           </div>
         </section>
 
@@ -390,13 +390,13 @@ function AnalysisResults({
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-2">SEO Coverage</h2>
           <div className="grid md:grid-cols-3 gap-3 text-sm">
-            <Stat label="Покриття" value={data.seo.coverage} />
-            <List label="Ключові" items={data.seo.keywords} />
+            <Stat label="Coverage" value={data.seo.coverage} />
+            <List label="Keywords" items={data.seo.keywords} />
             <List label="LSI" items={data.seo.lsiSuggestions} />
           </div>
           {!!data.seo.missingKeywords?.length && (
             <div className="text-sm mt-2">
-              <b>Додати:</b> {data.seo.missingKeywords.join(", ")}
+              <b>Add:</b> {data.seo.missingKeywords.join(", ")}
             </div>
           )}
         </section>
@@ -429,7 +429,7 @@ function AnalysisResults({
                   ? data.writeLike.brandStyles.map(
                       (b) => `${b.brand}: ${b.text}`
                     )
-                  : ["Немає варіантів"]
+                  : ["No variants"]
               }
             />
           </div>
@@ -442,12 +442,12 @@ function AnalysisResults({
           </h2>
           <div className="grid md:grid-cols-4 gap-3 text-sm">
             <Stat label="CTR" value={data.dashboard.ctr} />
-            <Stat label="Емоційність" value={data.dashboard.emotionality} />
+            <Stat label="Emotionality" value={data.dashboard.emotionality} />
             <Stat label="Benefit-power" value={data.dashboard.benefitPower} />
             <Stat label="PAS" value={data.dashboard.pas} />
             <Stat label="SEO" value={data.dashboard.seo} />
-            <Stat label="Унікальність" value={data.dashboard.uniqueness} />
-            <Stat label="Загальний" value={data.dashboard.overall} />
+            <Stat label="Uniqueness" value={data.dashboard.uniqueness} />
+            <Stat label="Overall" value={data.dashboard.overall} />
           </div>
         </section>
       </>
@@ -509,7 +509,7 @@ function PasCell({
         </div>
       </div>
       <div className="text-sm mt-1">
-        Якість: <b>{data.quality}</b>
+        Quality: <b>{data.quality}</b>
       </div>
       <div className="text-xs opacity-70 mt-1 whitespace-pre-wrap">
         {data.feedback}

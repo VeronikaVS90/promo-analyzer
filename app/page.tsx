@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ThemeToggleButton } from "./theme-toggle-button";
+import { LanguageToggleButton } from "./language-toggle-button";
+import { useLanguage } from "./language-context";
 
 type Highlight = { start: number; end: number; type: "benefit" | "feature" };
 type Block = {
@@ -97,6 +99,7 @@ async function parseFile(
 }
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"text" | "file">("text");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -143,7 +146,8 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center p-12 bg-background text-foreground transition-colors">
       <div className="w-full max-w-5xl">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex gap-2">
+          <LanguageToggleButton />
           <ThemeToggleButton />
         </div>
 
@@ -151,7 +155,7 @@ export default function HomePage() {
           PromoAnalyzer 📝
         </h1>
         <p className="text-center text-foreground/70 mb-8">
-          AI-powered promotional content analysis: CTR, EMV, PAS, SEO, CTA, style, and more.
+          {t.subtitle}
         </p>
 
         <div className="mb-4 flex gap-2">
@@ -161,7 +165,7 @@ export default function HomePage() {
               mode === "text" ? "bg-blue-600 text-white" : "bg-muted"
             }`}
           >
-            Paste text
+            {t.pasteText}
           </button>
           <button
             onClick={() => setMode("file")}
@@ -169,7 +173,7 @@ export default function HomePage() {
               mode === "file" ? "bg-blue-600 text-white" : "bg-muted"
             }`}
           >
-            Upload file (.pdf / .docx / .txt)
+            {t.uploadFile}
           </button>
         </div>
 
@@ -178,7 +182,7 @@ export default function HomePage() {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Paste text for analysis..."
+              placeholder={t.textPlaceholder}
               className="w-full h-48 p-4 border border-border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-background text-foreground"
               disabled={analyzeMutation.isPending || parseMutation.isPending}
             />
@@ -195,7 +199,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-3">
             <input
               className="border border-border rounded px-3 py-2 bg-background"
-              placeholder="Brand style (Apple, Nike, Tesla...) — optional"
+              placeholder={t.brandPlaceholder}
               onChange={(e) =>
                 setPreferences((p) => ({
                   ...(p || {}),
@@ -213,13 +217,13 @@ export default function HomePage() {
               }
               defaultValue=""
             >
-              <option value="">Tone — optional</option>
-              <option value="formal">formal</option>
-              <option value="friendly">friendly</option>
-              <option value="expert">expert</option>
-              <option value="blogger">blogger</option>
-              <option value="medical">medical</option>
-              <option value="simple">simple words</option>
+              <option value="">{t.toneLabel}</option>
+              <option value="formal">{t.toneOptions.formal}</option>
+              <option value="friendly">{t.toneOptions.friendly}</option>
+              <option value="expert">{t.toneOptions.expert}</option>
+              <option value="blogger">{t.toneOptions.blogger}</option>
+              <option value="medical">{t.toneOptions.medical}</option>
+              <option value="simple">{t.toneOptions.simple}</option>
             </select>
           </div>
 
@@ -229,21 +233,21 @@ export default function HomePage() {
             disabled={analyzeMutation.isPending || parseMutation.isPending}
           >
             {analyzeMutation.isPending || parseMutation.isPending
-              ? "Analyzing..."
-              : "Analyze"}
+              ? t.analyzing
+              : t.analyze}
           </button>
         </form>
 
         <div className="mt-8 w-full space-y-8">
           {(analyzeMutation.isPending || parseMutation.isPending) && (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              Processing...
+              {t.processing}
             </div>
           )}
 
           {analyzeMutation.isError && (
             <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/20 dark:border-red-500/50 dark:text-red-400 px-4 py-3 rounded-lg">
-              <strong className="font-bold">Error: </strong>
+              <strong className="font-bold">{t.error}</strong>
               <span>
                 {analyzeMutation.error instanceof Error
                   ? analyzeMutation.error.message
@@ -271,34 +275,36 @@ function AnalysisResults({
   data: Analysis;
   highlighted: Array<{ text: string; type: "text" | "benefit" | "feature" }>;
 }) {
+  const { t } = useLanguage();
+
   if (!data || !data.headline) {
-    return <div className="text-red-500">Error: invalid data structure</div>;
+    return <div className="text-red-500">{t.errorInvalidData}</div>;
   }
 
   return (
       <>
         {/* Headline / CTR */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2">Headline: EMV & CTR</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t.headline}</h2>
           <div className="grid md:grid-cols-3 gap-3">
             <Stat label="EMV" value={data.headline.emvScore} />
             <Stat
-              label="CTR Potential"
+              label={t.ctrPotential}
               value={data.headline.ctrPrediction.score}
             />
-            <Stat label="Why" value="—" sub={data.headline.why} />
+            <Stat label={t.why} value="—" sub={data.headline.why} />
           </div>
           <div className="mt-4">
-            <h3 className="font-semibold mb-1">Better alternatives:</h3>
+            <h3 className="font-semibold mb-1">{t.betterAlternatives}</h3>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                <b>Expert:</b> {data.headline.alternatives.expert}
+                <b>{t.expert}</b> {data.headline.alternatives.expert}
               </li>
               <li>
-                <b>Emotional:</b> {data.headline.alternatives.emotional}
+                <b>{t.emotional}</b> {data.headline.alternatives.emotional}
               </li>
               <li>
-                <b>Sales:</b> {data.headline.alternatives.sales}
+                <b>{t.sales}</b> {data.headline.alternatives.sales}
               </li>
             </ul>
           </div>
@@ -335,7 +341,7 @@ function AnalysisResults({
           </div>
           {!!data.benefitsFeatures.missingBenefits?.length && (
             <div className="mt-2 text-sm">
-              <b>Add benefits:</b>{" "}
+              <b>{t.addBenefits}</b>{" "}
               {data.benefitsFeatures.missingBenefits.join("; ")}
             </div>
           )}
@@ -365,24 +371,24 @@ function AnalysisResults({
           <h2 className="text-2xl font-semibold mb-2">Sales Mistakes</h2>
           <div className="grid md:grid-cols-4 gap-3 text-sm">
             <Stat
-              label="Long Sentences"
+              label={t.longSentences}
               value={data.salesMistakes.longSentences?.length || 0}
             />
             <Stat
-              label="Generic Phrases"
+              label={t.genericPhrases}
               value={data.salesMistakes.genericPhrases?.length || 0}
             />
             <Stat
-              label="Filler Words"
+              label={t.fillerWords}
               value={data.salesMistakes.fillerWords?.length || 0}
             />
             <Stat
-              label="Cliches"
+              label={t.cliches}
               value={data.salesMistakes.cliches?.length || 0}
             />
           </div>
           <div className="text-sm mt-2">
-            Water: <b>{data.salesMistakes.waterPercentage}%</b>
+            {t.water} <b>{data.salesMistakes.waterPercentage}%</b>
           </div>
         </section>
 
@@ -390,13 +396,13 @@ function AnalysisResults({
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-2">SEO Coverage</h2>
           <div className="grid md:grid-cols-3 gap-3 text-sm">
-            <Stat label="Coverage" value={data.seo.coverage} />
-            <List label="Keywords" items={data.seo.keywords} />
+            <Stat label={t.coverage} value={data.seo.coverage} />
+            <List label={t.keywords} items={data.seo.keywords} />
             <List label="LSI" items={data.seo.lsiSuggestions} />
           </div>
           {!!data.seo.missingKeywords?.length && (
             <div className="text-sm mt-2">
-              <b>Add:</b> {data.seo.missingKeywords.join(", ")}
+              <b>{t.add}</b> {data.seo.missingKeywords.join(", ")}
             </div>
           )}
         </section>
@@ -429,7 +435,7 @@ function AnalysisResults({
                   ? data.writeLike.brandStyles.map(
                       (b) => `${b.brand}: ${b.text}`
                     )
-                  : ["No variants"]
+                  : [t.noVariants]
               }
             />
           </div>
@@ -442,12 +448,12 @@ function AnalysisResults({
           </h2>
           <div className="grid md:grid-cols-4 gap-3 text-sm">
             <Stat label="CTR" value={data.dashboard.ctr} />
-            <Stat label="Emotionality" value={data.dashboard.emotionality} />
+            <Stat label={t.emotionality} value={data.dashboard.emotionality} />
             <Stat label="Benefit-power" value={data.dashboard.benefitPower} />
             <Stat label="PAS" value={data.dashboard.pas} />
             <Stat label="SEO" value={data.dashboard.seo} />
-            <Stat label="Uniqueness" value={data.dashboard.uniqueness} />
-            <Stat label="Overall" value={data.dashboard.overall} />
+            <Stat label={t.uniqueness} value={data.dashboard.uniqueness} />
+            <Stat label={t.overall} value={data.dashboard.overall} />
           </div>
         </section>
       </>
@@ -496,6 +502,8 @@ function PasCell({
   title: string;
   data: { present: boolean; quality: number; feedback: string };
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="border border-border rounded p-3">
       <div className="flex items-center justify-between">
@@ -509,7 +517,7 @@ function PasCell({
         </div>
       </div>
       <div className="text-sm mt-1">
-        Quality: <b>{data.quality}</b>
+        {t.quality} <b>{data.quality}</b>
       </div>
       <div className="text-xs opacity-70 mt-1 whitespace-pre-wrap">
         {data.feedback}

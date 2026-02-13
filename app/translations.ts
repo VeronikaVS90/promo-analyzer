@@ -3,6 +3,8 @@ export type Language = "en" | "ua";
 export const translations = {
   en: {
     subtitle: "AI-powered promotional content analysis: CTR, EMV, PAS, SEO, CTA, style, and more.",
+    subtitlePrefix: "AI-powered promotional content analysis:",
+    subtitleSuffix: "style, and more.",
     pasteText: "Paste text",
     uploadFile: "Upload file (.pdf / .docx / .txt)",
     textPlaceholder: "Paste text for analysis...",
@@ -23,6 +25,7 @@ export const translations = {
     errorInvalidData: "Error: invalid data structure",
     headline: "Headline: EMV & CTR",
     ctrPotential: "CTR Potential",
+    potential: "Potential",
     why: "Why",
     betterAlternatives: "Better alternatives:",
     expert: "Expert:",
@@ -42,9 +45,18 @@ export const translations = {
     uniqueness: "Uniqueness",
     overall: "Overall",
     quality: "Quality:",
+    // Abbreviation tooltips
+    emvTooltip: "EMV - Emotional Marketing Value: measures the emotional impact of words",
+    ctrTooltip: "CTR - Click-Through Rate: percentage of people who click on a link",
+    pasTooltip: "PAS - Problem, Agitation, Solution: copywriting framework",
+    seoTooltip: "SEO - Search Engine Optimization: improving visibility in search results",
+    ctaTooltip: "CTA - Call To Action: prompt that encourages user action",
+    lsiTooltip: "LSI - Latent Semantic Indexing: semantically related keywords",
   },
   ua: {
     subtitle: "AI-аналіз промо-текстів: CTR, EMV, PAS, SEO, CTA, стиль та ще більше.",
+    subtitlePrefix: "AI-аналіз промо-текстів:",
+    subtitleSuffix: "стиль та ще більше.",
     pasteText: "Вставити текст",
     uploadFile: "Завантажити файл (.pdf / .docx / .txt)",
     textPlaceholder: "Вставте текст для аналізу...",
@@ -65,6 +77,7 @@ export const translations = {
     errorInvalidData: "Помилка: некоректна структура даних",
     headline: "Заголовок: EMV та CTR",
     ctrPotential: "CTR потенціал",
+    potential: "потенціал",
     why: "Чому так",
     betterAlternatives: "Кращі варіанти:",
     expert: "Експертний:",
@@ -84,6 +97,13 @@ export const translations = {
     uniqueness: "Унікальність",
     overall: "Загальний",
     quality: "Якість:",
+    // Abbreviation tooltips
+    emvTooltip: "EMV - Emotional Marketing Value: вимірює емоційний вплив слів",
+    ctrTooltip: "CTR - Click-Through Rate: відсоток людей, які клікають на посилання",
+    pasTooltip: "PAS - Problem, Agitation, Solution: копірайтерська структура",
+    seoTooltip: "SEO - Search Engine Optimization: покращення видимості в результатах пошуку",
+    ctaTooltip: "CTA - Call To Action: заклик до дії, що спонукає користувача",
+    lsiTooltip: "LSI - Latent Semantic Indexing: семантично пов'язані ключові слова",
   },
 } as const;
 

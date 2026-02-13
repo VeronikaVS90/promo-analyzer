@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ThemeToggleButton } from "./theme-toggle-button";
 import { LanguageToggleButton } from "./language-toggle-button";
 import { useLanguage } from "./language-context";
+import { AbbreviationTooltip } from "./abbreviation-tooltip";
 
 type Highlight = { start: number; end: number; type: "benefit" | "feature" };
 type Block = {
@@ -155,7 +156,10 @@ export default function HomePage() {
           PromoAnalyzer 📝
         </h1>
         <p className="text-center text-foreground/70 mb-8">
-          {t.subtitle}
+          {t.subtitlePrefix} <AbbreviationTooltip abbr="CTR" />,{" "}
+          <AbbreviationTooltip abbr="EMV" />, <AbbreviationTooltip abbr="PAS" />
+          , <AbbreviationTooltip abbr="SEO" />, <AbbreviationTooltip abbr="CTA" />
+          , {t.subtitleSuffix}
         </p>
 
         <div className="mb-4 flex gap-2">
@@ -285,11 +289,18 @@ function AnalysisResults({
       <>
         {/* Headline / CTR */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2">{t.headline}</h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            {t.headline.split(":")[0]}: <AbbreviationTooltip abbr="EMV" /> &{" "}
+            <AbbreviationTooltip abbr="CTR" />
+          </h2>
           <div className="grid md:grid-cols-3 gap-3">
-            <Stat label="EMV" value={data.headline.emvScore} />
+            <Stat label={<AbbreviationTooltip abbr="EMV" />} value={data.headline.emvScore} />
             <Stat
-              label={t.ctrPotential}
+              label={
+                <>
+                  <AbbreviationTooltip abbr="CTR" /> {t.potential}
+                </>
+              }
               value={data.headline.ctrPrediction.score}
             />
             <Stat label={t.why} value="—" sub={data.headline.why} />
@@ -350,7 +361,7 @@ function AnalysisResults({
         {/* PAS */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-2">
-            Problem → Agitation → Solution
+            <AbbreviationTooltip abbr="PAS" />: Problem → Agitation → Solution
           </h2>
           <div className="grid md:grid-cols-3 gap-3 text-sm">
             <PasCell title="Problem" data={data.pas.problem} />
@@ -394,11 +405,13 @@ function AnalysisResults({
 
         {/* SEO */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2">SEO Coverage</h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            <AbbreviationTooltip abbr="SEO" /> {t.coverage}
+          </h2>
           <div className="grid md:grid-cols-3 gap-3 text-sm">
             <Stat label={t.coverage} value={data.seo.coverage} />
             <List label={t.keywords} items={data.seo.keywords} />
-            <List label="LSI" items={data.seo.lsiSuggestions} />
+            <List label={<AbbreviationTooltip abbr="LSI" />} items={data.seo.lsiSuggestions} />
           </div>
           {!!data.seo.missingKeywords?.length && (
             <div className="text-sm mt-2">
@@ -409,7 +422,9 @@ function AnalysisResults({
 
         {/* CTA */}
         <section className="bg-background p-6 border border-border rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2">AI CTA Optimizer</h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            AI <AbbreviationTooltip abbr="CTA" /> Optimizer
+          </h2>
           <ul className="list-disc pl-5 text-sm space-y-1">
             {data.cta.suggestions.map((s, i) => (
               <li key={i}>
@@ -447,11 +462,11 @@ function AnalysisResults({
             Content Score Dashboard
           </h2>
           <div className="grid md:grid-cols-4 gap-3 text-sm">
-            <Stat label="CTR" value={data.dashboard.ctr} />
+            <Stat label={<AbbreviationTooltip abbr="CTR" />} value={data.dashboard.ctr} />
             <Stat label={t.emotionality} value={data.dashboard.emotionality} />
             <Stat label="Benefit-power" value={data.dashboard.benefitPower} />
-            <Stat label="PAS" value={data.dashboard.pas} />
-            <Stat label="SEO" value={data.dashboard.seo} />
+            <Stat label={<AbbreviationTooltip abbr="PAS" />} value={data.dashboard.pas} />
+            <Stat label={<AbbreviationTooltip abbr="SEO" />} value={data.dashboard.seo} />
             <Stat label={t.uniqueness} value={data.dashboard.uniqueness} />
             <Stat label={t.overall} value={data.dashboard.overall} />
           </div>
@@ -465,7 +480,7 @@ function Stat({
   value,
   sub,
 }: {
-  label: string;
+  label: ReactNode;
   value: number | string;
   sub?: string;
 }) {
@@ -482,7 +497,7 @@ function Stat({
   );
 }
 
-function List({ label, items }: { label: string; items: string[] }) {
+function List({ label, items }: { label: ReactNode; items: string[] }) {
   return (
     <div className="border border-border rounded p-3">
       <div className="text-sm opacity-70 mb-1">{label}</div>

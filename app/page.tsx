@@ -117,9 +117,6 @@ export default function HomePage() {
 
   const parseMutation = useMutation({
     mutationFn: parseFile,
-    onSuccess: (data) => {
-      setText(data.text || "");
-    },
   });
 
   const highlighted = useMemo(() => {
@@ -134,15 +131,20 @@ export default function HomePage() {
 
     if (mode === "file") {
       if (!file) return;
-      await parseMutation.mutateAsync(file);
+      const parsed = await parseMutation.mutateAsync(file);
+      const parsedText = (parsed.text || "").trim();
+      setText(parsed.text || "");
+
+      if (!parsedText) return;
+      analyzeMutation.mutate({ t: parsedText, p: preferences });
+      return;
     } else {
       if (!text.trim()) return;
     }
 
-    const textToAnalyze = mode === "file" ? text : text;
-    if (textToAnalyze.trim()) {
-      analyzeMutation.mutate({ t: textToAnalyze, p: preferences });
-    }
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    analyzeMutation.mutate({ t: trimmed, p: preferences });
   };
 
   return (

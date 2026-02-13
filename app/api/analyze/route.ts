@@ -118,14 +118,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { text, preferences } = await request.json();
+    const { text, preferences, language } = await request.json();
 
     if (!text || typeof text !== "string") {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
 
+    const lang: "en" | "ua" = language === "ua" ? "ua" : "en";
+    const languageName = lang === "ua" ? "Ukrainian" : "English";
+
     const systemPrompt =
-      "You are a senior marketing analyst. Output STRICT JSON only. No markdown, no explanations outside JSON.";
+      `You are a senior marketing analyst. Output STRICT JSON only. No markdown, no explanations outside JSON.
+All human-readable text values must be written in ${languageName}.`;
     const userPrompt = `
 Analyze the promotional text and return STRICT JSON matching this schema:
 
@@ -196,6 +200,10 @@ Text:
 
 Consider optional preferences (may be null):
 ${JSON.stringify(preferences ?? {}, null, 2)}
+
+Language rules:
+- All human-readable strings (e.g. why, rationale, feedback, recommendations, alternatives, suggestions, etc.) MUST be in ${languageName}.
+- Keep enum fields exactly as specified by the schema (e.g. tone.variants[].tone, writeLike.brandStyles[].brand, structure.blocks[].type).
 
 Rules:
 - Provide numeric scores as integers 0-100 where relevant.

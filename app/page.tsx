@@ -71,12 +71,13 @@ type Analysis = {
 
 async function analyzeText(
   text: string,
-  preferences?: Preferences
+  preferences?: Preferences,
+  language?: "en" | "ua"
 ): Promise<Analysis> {
   const res = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, preferences }),
+    body: JSON.stringify({ text, preferences, language }),
   });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
@@ -100,7 +101,7 @@ async function parseFile(
 }
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [mode, setMode] = useState<"text" | "file">("text");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -110,7 +111,7 @@ export default function HomePage() {
 
   const analyzeMutation = useMutation({
     mutationFn: async ({ t, p }: { t: string; p?: Preferences }) => {
-      return await analyzeText(t, p);
+      return await analyzeText(t, p, language);
     },
   });
 

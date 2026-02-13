@@ -18,7 +18,7 @@ export function AbbreviationTooltip({ abbr }: { abbr: Abbreviation }) {
 
   return (
     <span
-      className="underline decoration-dotted cursor-help"
+      className="cursor-help"
       title={tooltips[abbr]}
     >
       {abbr}
